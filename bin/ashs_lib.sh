@@ -42,6 +42,7 @@ fi
 # Read the config file
 source ${ASHS_CONFIG?}
 
+# JDcomment: should consider this for running on slurm
 # Limit the number of threads to one if using QSUB
 if [[ $ASHS_USE_QSUB ]]; then
   export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
@@ -73,6 +74,8 @@ function fake_qsub()
   TMPDIR=$PARENTTMPDIR
 }
 
+
+# JDcomment: could we create a function that parallels this, and add it as an exception wherever this function is called? or do we need the 4 different functions that use qsub which I highlighted below?
 # Function to run a job in parallels
 function gnu_parallel_qsub()
 {
@@ -130,6 +133,8 @@ function job_progress()
   bash $ASHS_HOOK_SCRIPT progress $CHUNK_PSTART $CHUNK_PEND $PROGRESS
 }
 
+##############################################################################
+# JDcomment: looks like these are the set of squb functions we will need (between the ### lines). Do we want to overwrite these functions using slurm, so we don't need to rename these functions throughout the entire repository (hacky solution), or do we want to create new functions that perform the same functions using slurm in order to also maintain qsub compatibility in our version? Or, perhaps we could create just one new function, similar to fake_qsub() or gnu_parallel_qsub() above
 
 # Submit a job to the queue (or just run job) and wait until it finishes
 function qsubmit_sync()
@@ -256,6 +261,8 @@ function qwait()
     qsub -b y -sync y -j y -o /dev/null -cwd -hold_jid "$1" /bin/sleep 1
   fi
 }
+
+##############################################################################
 
 # Report the version number
 function vers() 
