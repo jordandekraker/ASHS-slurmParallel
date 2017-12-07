@@ -525,7 +525,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     # Statistics & Volumes
     qsubmit_sync "ashs_stg7" $ASHS_ROOT/bin/ashs_extractstats_qsub.sh
     if [[ ! $ASHS_USE_SLURM ]]; then
-	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg6 $JOBLIST_OPTS )
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg7 $JOBLIST_OPTS )
     fi	
 
 
