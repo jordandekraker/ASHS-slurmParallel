@@ -1,0 +1,14 @@
+ashs_main execution log
+  timestamp:   Thu Dec  7 11:58:08 EST 2017
+  invocation:  /project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/bin/ashs_main.sh -a /home/jdekrake/projects/rrg-akhanf/akhanf/opt/ashs-fastashs/ashs_atlas_penntle_hippo_20170915/ -g images/sub01_mprage.nii.gz -f images/sub01_tse.nii.gz -w mainTest-sub01
+  directory:   /home/jdekrake/project/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test
+  environment:
+    ASHS_MPRAGE=/project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/images/sub01_mprage.nii.gz
+    ASHS_ROOT=/project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel
+    ASHS_TSE=/project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/images/sub01_tse.nii.gz
+    ASHS_WORK=/project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/mainTest-sub01
+Atlas    : /project/6007967/akhanf/opt/ashs-fastashs/ashs_atlas_penntle_hippo_20170915
+T1 Image : /project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/images/sub01_mprage.nii.gz
+T2 Image : /project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/images/sub01_tse.nii.gz
+WorkDir  : /project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/mainTest-sub01
+Not using SGE or GNU parallel

@@ -1,0 +1,25 @@
+ashs_main execution log
+  timestamp:   Thu Dec  7 12:25:36 EST 2017
+  invocation:  /project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/bin/ashs_main.sh -a /home/jdekrake/projects/rrg-akhanf/akhanf/opt/ashs-fastashs/ashs_atlas_penntle_hippo_20170915/ -g images/sub01_mprage.nii.gz -f images/sub01_tse.nii.gz -w mainTest-sub01 -G
+  directory:   /home/jdekrake/project/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test
+  environment:
+    ASHS_MPRAGE=/project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/images/sub01_mprage.nii.gz
+    ASHS_ROOT=/project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel
+    ASHS_TSE=/project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/images/sub01_tse.nii.gz
+    ASHS_USE_SLURM=1
+    ASHS_WORK=/project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/mainTest-sub01
+Atlas    : /project/6007967/akhanf/opt/ashs-fastashs/ashs_atlas_penntle_hippo_20170915
+T1 Image : /project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/images/sub01_mprage.nii.gz
+T2 Image : /project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/images/sub01_tse.nii.gz
+WorkDir  : /project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/testing/atlas_system_test/mainTest-sub01
+ Using SLURM
+****************************************
+Starting stage 1: Normalization to T1 population template
+****************************************
+[0;36m
+-------------------  INFO  ---------------------
+Started stage 1: Normalization to T1 population 
+template
+------------------------------------------------
+[0m
+/project/6007967/jdekrake/multialtas_hippunfold/ASHS-slurmParallel/bin/ashs_lib.sh: line 157: $JOBLIST: ambiguous redirect
