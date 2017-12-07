@@ -75,6 +75,8 @@ function fake_qsub()
 }
 
 
+
+
 # JDcomment: could we create a function that parallels this, and add it as an exception wherever this function is called? or do we need the 4 different functions that use qsub which I highlighted below?
 # Function to run a job in parallels
 function gnu_parallel_qsub()
@@ -142,6 +144,7 @@ function qsubmit_sync()
   local MYNAME=$1
   shift 1
 
+
   # Set the number of ASHS jobs that are currently running
   ASHS_JOB_COUNT=1
   ASHS_JOB_INDEX=0
@@ -149,6 +152,9 @@ function qsubmit_sync()
 
   if [[ $ASHS_USE_QSUB ]]; then
     qsub $QOPTS -sync y -j y -o $ASHS_WORK/dump -cwd -V -N $MYNAME $*
+  elif [[ $ASHS_USE_SLURM ]]; then
+    #just write job to stdout, for later submission from joblist
+    echo $* > $JOBLIST
   else
     fake_qsub $MYNAME $*
   fi
@@ -156,11 +162,16 @@ function qsubmit_sync()
 
 # Submit an array of jobs parameterized by a single parameter. The parameter is passed in 
 # to the job after all other positional parameters
+
+
 function qsubmit_single_array()
 {
   local NAME=$1
   local PARAM=$2
   shift 2;
+
+  JOBLIST=$ASHS_WORK/joblist.$NAME
+  if [ -e $JOBLIST ]; then rm -f $JOBLIST; fi
 
   # Generate unique name to prevent clashing with qe
   local UNIQ_NAME=${NAME}_${$}
@@ -177,6 +188,7 @@ function qsubmit_single_array()
     export -f get_tmpdir
     parallel -u gnu_parallel_qsub ${NAME}_{} $* {} ::: $PARAM
 
+ 
   else
 
     for p1 in $PARAM; do
@@ -185,10 +197,11 @@ function qsubmit_single_array()
 
         qsub $QOPTS -j y -o $ASHS_WORK/dump -cwd -V -N ${UNIQ_NAME}_${p1} $* $p1
 
+      elif [[ $ASHS_USE_SLURM ]]; then
+        #just write job to stdout, for later submission from joblist
+	echo  $* $p1 >> $JOBLIST
       else
-
-        fake_qsub ${NAME}_${p1} $* $p1
-
+         fake_qsub ${NAME}_${p1} $* $p1
       fi
 
       ASHS_JOB_INDEX=$((ASHS_JOB_INDEX+1))
@@ -196,9 +209,10 @@ function qsubmit_single_array()
     done
 
   fi
-
+if [[ ! $ASHS_USE_SLURM ]]; then
   # Wait for the jobs to be done
   qwait "${UNIQ_NAME}_*"
+ fi
 }
 
 
@@ -210,6 +224,9 @@ function qsubmit_double_array()
   local PARAM1=$2
   local PARAM2=$3
   shift 3;
+  
+  JOBLIST=$ASHS_WORK/joblist.$NAME
+  if [ -e $JOBLIST ]; then rm -f $JOBLIST; fi
 
   # Set the number of ASHS jobs that are currently running
   local N1=$(echo $PARAM1 | wc -w | xargs)
@@ -236,10 +253,11 @@ function qsubmit_double_array()
 
           qsub $QOPTS -j y -o $ASHS_WORK/dump -cwd -V -N ${UNIQ_NAME}_${p1}_${p2} $* $p1 $p2
 
+        elif [[ $ASHS_USE_SLURM ]]; then
+        #just write job to stdout, for later submission from joblist
+	echo  $* $p1 $p2 >> $JOBLIST 
         else
-
-          fake_qsub ${NAME}_${p1}_${p2} $* $p1 $p2
-
+           fake_qsub ${NAME}_${p1}_${p2} $* $p1 $p2
         fi
 
         ASHS_JOB_INDEX=$((ASHS_JOB_INDEX+1))
@@ -249,8 +267,10 @@ function qsubmit_double_array()
 
   fi
 
+if [[  $ASHS_USE_SLURM ]]; then
   # Wait for the jobs to be done
   qwait "${UNIQ_NAME}_*"
+fi
 }
 
 

@@ -59,6 +59,7 @@ function usage()
 		                    (ashs_main) in a separate SGE job, rather than use the -q flag. The -q flag
 		                    is best for when you have only a few segmentations and want them to run fast.
 		  -q OPTS           Pass in additional options to SGE's qsub. Also enables -Q option above.
+		  -G                Use SLURM (graham) to submit the jobs (requires neuroglia-helpers)
 		  -z script         Provide a path to an executable script that will be used to retrieve SGE or
 		                    GNU parallel options for different stages of ASHS. Takes precendence over -q
 		  -P                Use GNU parallel to run on multiple cores on the local machine. You need to
@@ -136,7 +137,7 @@ fi
 # Clear the variables affected by the flags
 unset ATLAS ASHS_MPRAGE ASHS_TSE ASHS_WORK STAGE_SPEC
 unset ASHS_SKIP_ANTS ASHS_SKIP_RIGID ASHS_TIDY ASHS_SUBJID
-unset ASHS_USE_QSUB ASHS_REFSEG_LEFT ASHS_REFSEG_RIGHT ASHS_REFSEG_LIST
+unset ASHS_USE_QSUB ASHS_REFSEG_LEFT ASHS_REFSEG_RIGHT ASHS_REFSEG_LIST ASHS_USE_SLURM
 unset ASHS_QSUB_OPTS ASHS_QSUB_HOOK
 unset ASHS_INPUT_T2T1_MAT ASHS_INPUT_T2T1_MODE
 
@@ -147,7 +148,7 @@ unset ASHS_USE_CUSTOM_HOOKS
 unset ASHS_SPECIAL_ACTION
 
 # Read the options
-while getopts "g:f:w:s:a:q:I:C:r:z:m:HNTdhVQPM" opt; do
+while getopts "g:f:w:s:a:q:I:C:r:z:m:HNTdhVQPMG" opt; do
   case $opt in
 
     a) ATLAS=$(dereflink $OPTARG);;
@@ -159,6 +160,7 @@ while getopts "g:f:w:s:a:q:I:C:r:z:m:HNTdhVQPM" opt; do
     T) ASHS_TIDY=1;;
     I) ASHS_SUBJID=$OPTARG;;
     Q) ASHS_USE_QSUB=1;;
+    G) ASHS_USE_SLURM=1;;
     P) ASHS_USE_PARALLEL=1;;
     q) ASHS_USE_QSUB=1; ASHS_QSUB_OPTS=$OPTARG;;
     z) ASHS_USE_QSUB=1; ASHS_QSUB_HOOK=$OPTARG;;
@@ -312,6 +314,8 @@ if [[ $ASHS_USE_QSUB ]]; then
   fi
 elif [[ $ASHS_USE_PARALLEL ]]; then
   echo "Using GNU parallel"
+ elif [[ $ASHS_USE_SLURM ]]; then
+  echo " Using SLURM"
 else
   echo "Not using SGE or GNU parallel"
 fi
@@ -453,41 +457,78 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
   # Send the informational message via hook
   bash $ASHS_HOOK_SCRIPT info "Started stage $STAGE: $STAGE_TEXT"
 
+  JOBLIST_OPTS="-t"
+  if [ -n "$JOB_DEPENDS" ]; then
+	JOBLIST_OPTS="$JOBLIST_OPTS -d afterany:$JOB_DEPENDS"
+  fi
+
   case $STAGE in 
 
     1) 
     # Template matching
     qsubmit_sync "ashs_stg1" $ASHS_ROOT/bin/ashs_template_qsub.sh
+    if [[ ! $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg1 $JOBLIST_OPTS )
+    fi	
+
     ;;
 
     2) 
     # Multi-atlas matching 
     qsubmit_double_array "ashs_stg2" "$SIDES" "$TRIDS" $ASHS_ROOT/bin/ashs_multiatlas_qsub.sh
+    if [[ ! $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg2 $JOBLIST_OPTS )
+    fi	
+
     ;;
 
     3) 
     # Voting
     qsubmit_single_array "ashs_stg3" "$SIDES" $ASHS_ROOT/bin/ashs_voting_qsub.sh 0
+    if [[ ! $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg3 $JOBLIST_OPTS )
+    fi	
+
+
     ;;
 
     4)
     # Bootstrapping
     qsubmit_double_array "ashs_stg4" "$SIDES" "$TRIDS" $ASHS_ROOT/bin/ashs_bootstrap_qsub.sh
+    if [[ ! $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg4 $JOBLIST_OPTS )
+    fi	
+
+
     ;;
 
     5)
     # Bootstrap voting
     qsubmit_single_array "ashs_stg5" "$SIDES" $ASHS_ROOT/bin/ashs_voting_qsub.sh 1
+    if [[ ! $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg5 $JOBLIST_OPTS )
+    fi	
+
+
     ;;
 
     6)
     # Final QA
     qsubmit_sync "ashs_stg6" $ASHS_ROOT/bin/ashs_finalqa_qsub.sh
+    if [[ ! $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg6 $JOBLIST_OPTS )
+    fi	
+
     ;;
   
     7) 
     # Statistics & Volumes
     qsubmit_sync "ashs_stg7" $ASHS_ROOT/bin/ashs_extractstats_qsub.sh
+    if [[ ! $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg6 $JOBLIST_OPTS )
+    fi	
+
+
     ;;
 
   esac  
