@@ -457,7 +457,12 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
   # Send the informational message via hook
   bash $ASHS_HOOK_SCRIPT info "Started stage $STAGE: $STAGE_TEXT"
 
-  JOBLIST_OPTS="-t"
+
+  if [[ $ASHS_USE_SLURM ]]; then
+#  JOBLIST_OPTS="-t "# -j 4core16gb"
+  JOBLIST_OPTS=""
+  fi
+
   if [ -n "$JOB_DEPENDS" ]; then
 	JOBLIST_OPTS="$JOBLIST_OPTS -d afterany:$JOB_DEPENDS"
   fi
@@ -467,7 +472,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     1) 
     # Template matching
     qsubmit_sync "ashs_stg1" $ASHS_ROOT/bin/ashs_template_qsub.sh
-    if [[ ! $ASHS_USE_SLURM ]]; then
+    if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg1 $JOBLIST_OPTS )
     fi	
 
@@ -476,7 +481,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     2) 
     # Multi-atlas matching 
     qsubmit_double_array "ashs_stg2" "$SIDES" "$TRIDS" $ASHS_ROOT/bin/ashs_multiatlas_qsub.sh
-    if [[ ! $ASHS_USE_SLURM ]]; then
+    if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg2 $JOBLIST_OPTS )
     fi	
 
@@ -485,7 +490,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     3) 
     # Voting
     qsubmit_single_array "ashs_stg3" "$SIDES" $ASHS_ROOT/bin/ashs_voting_qsub.sh 0
-    if [[ ! $ASHS_USE_SLURM ]]; then
+    if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg3 $JOBLIST_OPTS )
     fi	
 
@@ -495,7 +500,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     4)
     # Bootstrapping
     qsubmit_double_array "ashs_stg4" "$SIDES" "$TRIDS" $ASHS_ROOT/bin/ashs_bootstrap_qsub.sh
-    if [[ ! $ASHS_USE_SLURM ]]; then
+    if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg4 $JOBLIST_OPTS )
     fi	
 
@@ -505,7 +510,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     5)
     # Bootstrap voting
     qsubmit_single_array "ashs_stg5" "$SIDES" $ASHS_ROOT/bin/ashs_voting_qsub.sh 1
-    if [[ ! $ASHS_USE_SLURM ]]; then
+    if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg5 $JOBLIST_OPTS )
     fi	
 
@@ -515,7 +520,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     6)
     # Final QA
     qsubmit_sync "ashs_stg6" $ASHS_ROOT/bin/ashs_finalqa_qsub.sh
-    if [[ ! $ASHS_USE_SLURM ]]; then
+    if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg6 $JOBLIST_OPTS )
     fi	
 
@@ -524,7 +529,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     7) 
     # Statistics & Volumes
     qsubmit_sync "ashs_stg7" $ASHS_ROOT/bin/ashs_extractstats_qsub.sh
-    if [[ ! $ASHS_USE_SLURM ]]; then
+    if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg7 $JOBLIST_OPTS )
     fi	
 
@@ -534,6 +539,8 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
   esac  
 
   # Run the validity check
-  ashs_check_main $STAGE || exit -1
 
+  if [[ ! $ASHS_USE_SLURM ]]; then
+  ashs_check_main $STAGE || exit -1
+  fi
 done

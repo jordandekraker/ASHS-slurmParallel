@@ -62,7 +62,7 @@ if [[ ! -f $WSUB/consensus_heuristic_wgtavg_${side}_native.nii.gz ]]; then
 fi
 
 # Call Hongzhi's BC code
-bc $ASHS_WORK/tse.nii.gz $WSUB/consensus_heuristic_wgtavg_${side}_native.nii.gz \
+bc_ashs $ASHS_WORK/tse.nii.gz $WSUB/consensus_heuristic_wgtavg_${side}_native.nii.gz \
   $sid $ASHS_ROOT/data/adaboost $WSUB/bcfh_wgtavg_${side}_native.nii.gz
 
 # Now apply subfield remapping (maintain heuristics)

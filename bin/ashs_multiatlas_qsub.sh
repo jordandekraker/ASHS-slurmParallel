@@ -29,6 +29,8 @@ set -x -e
 # Library
 source ${ASHS_ROOT?}/bin/ashs_lib.sh
 
+echo "TMPDIR set to $TMPDIR"
+
 # Determine training case and side based on the TASK ID
 side=${1?}
 tid=${2?}

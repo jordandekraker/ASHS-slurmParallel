@@ -48,13 +48,38 @@ if [[ $ASHS_USE_QSUB ]]; then
   export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
 fi
 
+if [[ $ASHS_USE_SLURM ]]; then
+  export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=8
+  
+  if [ -n "$SCRATCH_DIR" ]; then
+	 echo "exporting: export TMPDIR=$SCRATCH_DIR"
+	 export TMPDIR=$SCRATCH_DIR
+ else 
+	 echo "not exporting because SCRATCH_DIR not set: $SCRATCH_DIR"
+  fi
+fi
+
+
+
+  if [ -n "$SCRATCH_DIR" ]; then
+	 echo "exporting outside of IS_SLURM: export TMPDIR=$SCRATCH_DIR"
+	 export TMPDIR=$SCRATCH_DIR
+ else 
+	 echo "not exporting outside of IS_SLURM: because SCRATCH_DIR not set: $SCRATCH_DIR"
+  fi
+
 # Determine the TMDDIR parameter for the child scripts
 function get_tmpdir()
 {
   # If TMPDIR is already set (i.e., ashs_main is run from qsub)
   # then this will create a subdirectory in TMPDIR. Otherwise
   # this will create a subdirectory in /tmp
+  echo "exporting TMPDIR inside get_tmpdir()"
+  if [[ $ASHS_USE_SLURM ]]; then
+  echo $(mktemp -d -p /scratch/${USER}/${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID} -t ashs.XXXXXXXX)
+  else
   echo $(mktemp -d -t ashs.XXXXXXXX)
+  fi
 }
  
 # Simulate qsub environment in bash (i.e., create and set tempdir)
@@ -144,7 +169,8 @@ function qsubmit_sync()
   local MYNAME=$1
   shift 1
 
-
+  JOBLIST=$ASHS_WORK/joblist.$MYNAME
+echo using $JOBLIST
   # Set the number of ASHS jobs that are currently running
   ASHS_JOB_COUNT=1
   ASHS_JOB_INDEX=0
@@ -2116,7 +2142,7 @@ function ashs_registration_qc()
     $TMPDIR/qa.png
 
   mkdir -p $ASHS_WORK/qa
-  montage -label "${ASHS_SUBJID}:${side}" $TMPDIR/qa.png -geometry +1+1 \
+  montage -font DejaVu-Sans -label "${ASHS_SUBJID}:${side}" $TMPDIR/qa.png -geometry +1+1 \
     $ASHS_WORK/qa/qa_registration_${side}_qa.png
 }
 
@@ -2185,6 +2211,6 @@ function ashs_segmentation_qc()
     $TMPDIR/qa.png
 
   mkdir -p $ASHS_WORK/qa
-  montage -label "${ASHS_SUBJID}:${side}" $TMPDIR/qa.png -geometry +1+1 \
+  montage -font DejaVu-Sans -label "${ASHS_SUBJID}:${side}" $TMPDIR/qa.png -geometry +1+1 \
     $ASHS_WORK/qa/qa_seg_${malfmode}_${corrmode}_${side}_qa.png
 }
