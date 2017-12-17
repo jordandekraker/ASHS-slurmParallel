@@ -46,6 +46,7 @@ function usage()
 		                    the whole ashs_train job runs in a single process. If you are on a cluster 
 		                    that has SGE, you should really use this flag
 		  -q OPTS           Pass in additional options to SGE's qsub. Also enables -Q option above.
+		  -G                Use SLURM (graham) to submit the jobs (requires neuroglia-helpers)
 		  -z script         Provide a path to an executable script that will be used to retrieve SGE or
 		                    GNU parallel options for different stages of ASHS. Takes precendence over -q
 		  -P                Use GNU parallel to run on multiple cores on the local machine. You need to
@@ -154,7 +155,7 @@ fi
 unset ASHS_SPECIAL_ACTION
 
 # Read the options
-while getopts "C:D:L:w:s:x:q:r:z:m:S:NdhVQP" opt; do
+while getopts "C:D:L:w:s:x:q:r:z:m:S:NdhVQPG" opt; do
   case $opt in
 
     D) ASHS_TRAIN_MANIFEST=$(dereflink $OPTARG);;
@@ -164,6 +165,7 @@ while getopts "C:D:L:w:s:x:q:r:z:m:S:NdhVQP" opt; do
     S) XVAL_STAGE_SPEC=$OPTARG;;
     N) ASHS_SKIP_ANTS=1; ASHS_SKIP_RIGID=1; ASHS_SKIP=1;;
     Q) ASHS_USE_QSUB=1;;
+    G) ASHS_USE_SLURM=1;;
     P) ASHS_USE_PARALLEL=1;;
     q) ASHS_USE_QSUB=1; ASHS_QSUB_OPTS=$OPTARG;;
     z) ASHS_USE_QSUB=1; ASHS_QSUB_HOOK=$OPTARG;;
@@ -241,11 +243,13 @@ if [[ $ASHS_TRAIN_TRANSFORM_MANIFEST && ! -f  $ASHS_TRAIN_TRANSFORM_MANIFEST ]];
 fi
 
 # Check that parallel and qsub are not both on
-if [[ $ASHS_USE_PARALLEL && $ASHS_USE_QSUB ]]; then
-  echo "Cannot use SGE (-Q) and GNU Parallel (-P) at the same time"
-  exit -2
+if [[ $ASHS_USE_PARALLEL ]]; then
+  echo " Using SGE (-Q)"
+elif [[ $ASHS_USE_QSUB ]]; then
+  echo " Using GNU Parallel (-P)"
+elif [[ $ASHS_USE_SLURM ]]; then
+  echo " Using SLURM (-G)"
 fi
-
 
 # Get the list of ids
 ATLAS_ID=( $(cat $ASHS_TRAIN_MANIFEST | awk '! /^[ \t]*#/ {print $1}') );
@@ -388,40 +392,72 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     fi
   fi
 
+if [[ $ASHS_USE_SLURM ]]; then
+#  JOBLIST_OPTS="-t"
+  JOBLIST_OPTS="-j" # -j 4core16gb
+fi
+  
+ if [ -n "$JOB_DEPENDS" ]; then
+  JOBLIST_OPTS="$JOBLIST_OPTS -d afterany:$JOB_DEPENDS"
+fi
+
   case $STAGE in 
 
     1)
     # Initialize Directory
     ashs_atlas_initialize_directory;;
-
+    if [[ $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg1 $JOBLIST_OPTS )
+    fi	
+ 
     2)
     # The first step is to build a template from the atlas images using the standard
     # code in ANTS. For this, we got to copy all the atlases to a common directory
     ashs_atlas_build_template;;
-
+    if [[ $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg2 $JOBLIST_OPTS )
+    fi	
+    
     3)
     # Resample atlas to template
     ashs_atlas_resample_tse_to_template;;
-
+    if [[ $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg3 $JOBLIST_OPTS )
+    fi	
+    
     4)
     # Perform pairwise registration between all atlases
     ashs_atlas_register_to_rest;;
-
+    if [[ $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg4 $JOBLIST_OPTS )
+    fi	
+    
     5)
     # Train error correction
     ashs_atlas_adaboost_train;;
-
+    if [[ $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg5 $JOBLIST_OPTS )
+    fi	
+    
     6)
     # Organize everything into an atlas that can be used with the main ASHS script
     ashs_atlas_organize_final;;
-
+    if [[ $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg6 $JOBLIST_OPTS )
+    fi	
+    
     7)
     # Final cross-validation
     ashs_atlas_organize_xval;;
-
+    if [[ $ASHS_USE_SLURM ]]; then
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg7 $JOBLIST_OPTS )
+    fi	
+    
   esac
 
   # Run the validity check
-  ashs_check_train $STAGE || exit -1
-
+  if [[ ! $ASHS_USE_SLURM ]]; then
+    ashs_check_main $STAGE || exit -1
+  fi
+  
 done
