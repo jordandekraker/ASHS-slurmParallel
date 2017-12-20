@@ -271,7 +271,7 @@ declare -a ATLAS_T2T1_MAT ATLAS_T2T1_MODE
 for ((i=0; i < $N; i++)); do
 
   # Check for manifest components
-  if [[ -f ${ATLAS_T1[i]} && -f ${ATLAS_T2[i]} && -f ${ATLAS_LS[$i]} && -f ${ATLAS_RS[$i]} ]]; then
+  if [[ -f ${ATLAS_T1[i]} && -f ${ATLAS_T2[i]} && -f ${ATLAS_LS[$i]} ]]; then #&& -f ${ATLAS_RS[$i]} ]]; then
     echo Verified atlas ${ATLAS_ID[i]}
   else
     echo Bad specification for atlas \"${ATLAS_ID[i]}\"
@@ -392,66 +392,65 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     fi
   fi
 
-if [[ $ASHS_USE_SLURM ]]; then
-#  JOBLIST_OPTS="-t"
-  JOBLIST_OPTS="-j" # -j 4core16gb
-fi
+  if [[ $ASHS_USE_SLURM ]]; then
+    JOBLIST_OPTS="" # -j 4core16gb
+  fi
   
- if [ -n "$JOB_DEPENDS" ]; then
-  JOBLIST_OPTS="$JOBLIST_OPTS -d afterany:$JOB_DEPENDS"
-fi
+  if [ -n "$JOB_DEPENDS" ]; then
+    JOBLIST_OPTS="$JOBLIST_OPTS -d afterany:$JOB_DEPENDS"
+  fi
 
   case $STAGE in 
 
     1)
     # Initialize Directory
-    ashs_atlas_initialize_directory;;
+    ashs_atlas_initialize_directory
     if [[ $ASHS_USE_SLURM ]]; then
-	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg1 $JOBLIST_OPTS )
-    fi	
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_atlas_init $JOBLIST_OPTS )
+    fi	;;
  
     2)
     # The first step is to build a template from the atlas images using the standard
     # code in ANTS. For this, we got to copy all the atlases to a common directory
-    ashs_atlas_build_template;;
+    ashs_atlas_build_template
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg2 $JOBLIST_OPTS )
-    fi	
+    fi	;;
     
     3)
     # Resample atlas to template
-    ashs_atlas_resample_tse_to_template;;
+    ashs_atlas_resample_tse_to_template
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg3 $JOBLIST_OPTS )
-    fi	
+    fi	;;
     
     4)
     # Perform pairwise registration between all atlases
-    ashs_atlas_register_to_rest;;
+    ashs_atlas_register_to_rest
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg4 $JOBLIST_OPTS )
-    fi	
+    fi	;;
     
     5)
     # Train error correction
-    ashs_atlas_adaboost_train;;
+    ashs_atlas_adaboost_train
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg5 $JOBLIST_OPTS )
-    fi	
+    fi	;;
     
     6)
     # Organize everything into an atlas that can be used with the main ASHS script
-    ashs_atlas_organize_final;;
+    ashs_atlas_organize_final
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg6 $JOBLIST_OPTS )
-    fi	
+    fi	;;
     
     7)
     # Final cross-validation
-    ashs_atlas_organize_xval;;
+    ashs_atlas_organize_xval
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg7 $JOBLIST_OPTS )
-    fi	
+    fi	;;
     
   esac
 
