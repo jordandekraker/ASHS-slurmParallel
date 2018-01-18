@@ -459,8 +459,8 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
 
 
   if [[ $ASHS_USE_SLURM ]]; then
-#  JOBLIST_OPTS="-t "# -j 4core16gb"
-  JOBLIST_OPTS=""
+  JOBLIST_OPTS="-j 4core16gb"
+ # JOBLIST_OPTS="-t"
   fi
 
   if [ -n "$JOB_DEPENDS" ]; then
@@ -473,7 +473,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     # Template matching
     qsubmit_sync "ashs_stg1" $ASHS_ROOT/bin/ashs_template_qsub.sh
     if [[ $ASHS_USE_SLURM ]]; then
-	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_init $JOBLIST_OPTS )
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg1 $JOBLIST_OPTS )
     fi	
 
     ;;

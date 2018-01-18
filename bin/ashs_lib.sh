@@ -1045,7 +1045,10 @@ function ashs_atlas_build_template()
     qsubmit_single_array "template_reg_${iter}" "${ATLAS_ID[*]}" \
       $ASHS_ROOT/bin/ashs_function_qsub.sh \
       ashs_template_pairwise_rigid 
+	JOB_DEPEND_T1=$(joblistSubmit $ASHS_WORK/joblist.template_reg_${iter} $) #possible typo here?
 
+# -------- submit separate job for this
+    
     # Figure out which atlas has the best worst NCC - this is the atlas we want to register everyone to
     for id in ${ATLAS_ID[*]}; do
       echo $(cat $PREREG/worstncc_${id}.txt) $id
@@ -1066,6 +1069,8 @@ function ashs_atlas_build_template()
       fi
     done
 
+# -------- submit separate job for this
+
     # Perform the iterations of template building
     for ((iter=0; iter < $ASHS_TEMPLATE_STAGES_TOTAL; iter++)); do
 
@@ -1079,6 +1084,8 @@ function ashs_atlas_build_template()
         $ASHS_ROOT/bin/ashs_function_qsub.sh \
         ashs_template_single_reg $iter $DO_RIGID
 
+# -------- submit separate job for this WITHIN THE 'iter' FOR LOOP??
+
       # Create a backup of previous iteration template
       cp -av $TEMPLATE_DIR/atlastemplate.nii.gz $TEMPLATE_DIR/atlastemplate_iter_${iter}.nii.gz
 
@@ -1087,6 +1094,8 @@ function ashs_atlas_build_template()
         ashs_average_images_normalized \
         $TEMPLATE_DIR/atlastemplate.nii.gz $TEMPLATE_DIR/atlastemplate_iter_${iter}.nii.gz \
         $TEMPLATE_DIR/atlas_*_to_template_reslice.nii.gz
+
+# -------- submit separate job for this WITHIN THE 'iter' FOR LOOP??
 
       # TODO: Shape update step !!!
     done
@@ -1109,6 +1118,8 @@ function ashs_atlas_build_template()
     qsubmit_double_array "template_reslice_seg" "${ATLAS_ID[*]}" "$SIDES" \
       $ASHS_ROOT/bin/ashs_function_qsub.sh \
       ashs_template_reslice_seg 
+
+# -------- submit separate job for this
 
     qsubmit_single_array "template_create_roi" "$SIDES" \
       $ASHS_ROOT/bin/ashs_function_qsub.sh \
@@ -1284,6 +1295,8 @@ function ashs_atlas_organize_final()
   qsubmit_single_array "ashs_organize_final" "$(for ((i=0;i<$N;i++)); do echo $i; done)" \
     $ASHS_ROOT/bin/ashs_function_qsub.sh \
     ashs_atlas_organize_one 
+
+# -------- submit separate job for this
 
   # Copy the SNAP segmentation labels
   mkdir -p $FINAL/snap
@@ -1688,10 +1701,14 @@ function ashs_atlas_adaboost_train()
     $ASHS_ROOT/bin/ashs_function_qsub.sh \
     ashs_xval_loo
 
+# -------- submit separate job for this
+
   # This qsub will simply generate the various lists used by bl, and the voxel counts
   qsubmit_double_array "ashs_bl_prep" "${BLPREPEXP[*]}" "$SIDES" \
     $ASHS_ROOT/bin/ashs_function_qsub.sh \
     ashs_xval_prepare_bl_exp
+
+# -------- submit separate job for this
 
   # Generate the list of bl experiments to run based on voxel counts
   iExp=0
@@ -1712,6 +1729,8 @@ function ashs_atlas_adaboost_train()
 
     done
   done
+
+# -------- submit separate job for this
 
   # Submit all the actual bias learning experiments
   qsubmit_double_array "ashs_bl" "${BLEXP[*]}" "usegray nogray" \
@@ -1930,8 +1949,7 @@ function ashs_check_atlas()
 
     # Report failure
     bash $ASHS_HOOK_SCRIPT \
-      error "Atlas validity check detected missing files. \
-      ($FIRST_MISSING and $((N_MISSING-1)) other files)."
+      error "Atlas validity check detected missing files. ($FIRST_MISSING and $((N_MISSING-1)) other files)"
 
     return -1
 
@@ -2214,3 +2232,4 @@ function ashs_segmentation_qc()
   montage -font DejaVu-Sans -label "${ASHS_SUBJID}:${side}" $TMPDIR/qa.png -geometry +1+1 \
     $ASHS_WORK/qa/qa_seg_${malfmode}_${corrmode}_${side}_qa.png
 }
+

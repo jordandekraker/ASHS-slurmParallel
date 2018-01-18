@@ -59,7 +59,7 @@ function usage()
 		                    cross-validation and want to run just a subset of stages. For developers mostly.
 		  -V                Display version information and exit
 
-		stages:
+	stages:
 		  1                 Initialize atlas directory
 		  2                 Build population-specific template
 		  3                 Resample each atlas to template space
@@ -393,7 +393,7 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
   fi
 
   if [[ $ASHS_USE_SLURM ]]; then
-    JOBLIST_OPTS="" # -j 4core16gb
+    JOBLIST_OPTS="-j 4core16gb"
   fi
   
   if [ -n "$JOB_DEPENDS" ]; then
@@ -412,27 +412,29 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     2)
     # The first step is to build a template from the atlas images using the standard
     # code in ANTS. For this, we got to copy all the atlases to a common directory
-    ashs_atlas_build_template
-    if [[ $ASHS_USE_SLURM ]]; then
-	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg2 $JOBLIST_OPTS )
-    fi	;;
+    
+    # need to adjust -- has 5 submits inside
+    ashs_atlas_build_template 
+    #if [[ $ASHS_USE_SLURM ]]; then
+#	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg2 $JOBLIST_OPTS ) 
+#    fi	;;
     
     3)
-    # Resample atlas to template
+	    # Resample atlas to template (good)
     ashs_atlas_resample_tse_to_template
     if [[ $ASHS_USE_SLURM ]]; then
-	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg3 $JOBLIST_OPTS )
+	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg3 $JOBLIST_OPTS ) # should be joblist.template_reslice_tse?
     fi	;;
     
     4)
-    # Perform pairwise registration between all atlases
+	    # Perform pairwise registration between all atlases  (good)
     ashs_atlas_register_to_rest
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg4 $JOBLIST_OPTS )
     fi	;;
     
     5)
-    # Train error correction
+	    # Train error correction  (need to adjust -- 3 submits inside)
     ashs_atlas_adaboost_train
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg5 $JOBLIST_OPTS )
@@ -440,14 +442,14 @@ for ((STAGE=$STAGE_START; STAGE<=$STAGE_END; STAGE++)); do
     
     6)
     # Organize everything into an atlas that can be used with the main ASHS script
-    ashs_atlas_organize_final
+    ashs_atlas_organize_final  ## needs adjustment -- try running on  login node instead of submitting
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg6 $JOBLIST_OPTS )
     fi	;;
     
     7)
     # Final cross-validation
-    ashs_atlas_organize_xval
+    ashs_atlas_organize_xval  ##  this doesnt use qsubmit, will need adjustment...
     if [[ $ASHS_USE_SLURM ]]; then
 	JOB_DEPENDS=$(joblistSubmit $ASHS_WORK/joblist.ashs_stg7 $JOBLIST_OPTS )
     fi	;;
