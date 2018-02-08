@@ -11,5 +11,5 @@ https://github.com/khanlab/neuroglia-helpers
 TODO:
  - get ashs_train.sh working (need to split some stages into additional jobs)
  - prevent redundant joblists being created (one in parent directory, one in output directory. only parent directory version appears to contain correct jobs)
- - consider adding the possibility of progagating multiple labels (e.g. multiple laplace gradients)
+ - consider adding the possibility of propagating multiple labels (e.g. multiple laplace gradients)
  
